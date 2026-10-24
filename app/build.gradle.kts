@@ -46,6 +46,8 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // Real phones only: keeps the APK small (MapLibre ships ~11 MB per ABI).
+            ndk { abiFilters += listOf("arm64-v8a", "armeabi-v7a") }
         }
         debug {
             applicationIdSuffix = ".debug"
