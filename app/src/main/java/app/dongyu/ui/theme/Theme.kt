@@ -1,6 +1,7 @@
 package app.dongyu.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -128,8 +129,10 @@ fun DongyuTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable
             colorScheme = if (darkTheme) DarkColors else LightColors,
             typography = DongyuTypography,
             shapes = DongyuShapes,
-            content = content,
-        )
+        ) {
+            // Default text/icon colour for screens drawn outside a Surface/Scaffold.
+            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground, content = content)
+        }
     }
 }
 

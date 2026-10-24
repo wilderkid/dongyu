@@ -213,7 +213,7 @@ private fun SplitsCard(splits: List<Split>, sport: SportType) {
             else if (pace != null && slowest > 0) ((fastest ?: pace) / pace).toFloat().let { 0.35f + 0.65f * ((it - 0.6f) / 0.4f).coerceIn(0f, 1f) } else 0f
             Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 val idxLabel = if (s.partial) Fmt.num(s.distanceM / (if (swim) 100.0 else if (useSpeed) 1000.0 else 1000.0), if (swim) 1 else 2) else
-                    (if (useSpeed) ((s.index + 1) * 5).toString() else (s.index + 1).toString())
+                    (if (useSpeed) (s.index * 5).toString() else s.index.toString())
                 Text(idxLabel, Modifier.width(44.dp), style = MaterialTheme.typography.labelLarge)
                 Text(
                     if (useSpeed) Fmt.num(s.speedKmh ?: 0.0, 1) else if (swim) Pace.format(pace?.div(10)) else Pace.format(pace),

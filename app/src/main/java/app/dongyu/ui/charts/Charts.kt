@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -272,15 +273,20 @@ fun CalendarHeatmap(
     val labelStyle = TextStyle(fontSize = 9.sp, color = subtle)
     val maxV = data.values.maxOrNull()?.coerceAtLeast(1.0) ?: 1.0
     val firstMonday = end.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(weeks - 1L)
-    Canvas(modifier.fillMaxWidth().height(126.dp)) {
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+    val gapDp = 3.dp
+    val cellDp = (maxWidth - gapDp * (weeks - 1)) / weeks
+    Canvas(Modifier.fillMaxWidth().height(14.dp + cellDp * 7 + gapDp * 6)) {
         val top = 14.dp.toPx()
         val gap = 3.dp.toPx()
         val cell = min((size.width - gap * (weeks - 1)) / weeks, (size.height - top - gap * 6) / 7)
         var lastMonth = -1
+        var lastLabelWk = -10
         for (wk in 0 until weeks) {
             val monday = firstMonday.plusWeeks(wk.toLong())
             if (monday.monthValue != lastMonth) {
-                if (wk < weeks - 2) {
+                if (wk < weeks - 2 && wk - lastLabelWk >= 3) {
+                    lastLabelWk = wk
                     val tl = measurer.measure(monthLabel(monday), labelStyle)
                     drawText(tl, topLeft = Offset(wk * (cell + gap), 0f))
                 }
@@ -298,6 +304,7 @@ fun CalendarHeatmap(
                 drawRoundRect(c, Offset(wk * (cell + gap), top + d * (cell + gap)), Size(cell, cell), CornerRadius(cell * 0.28f))
             }
         }
+    }
     }
 }
 
