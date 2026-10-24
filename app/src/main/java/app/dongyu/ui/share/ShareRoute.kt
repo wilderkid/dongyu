@@ -308,7 +308,7 @@ fun ShareScreen(
 @Composable
 private fun OptionRow(label: String, content: @Composable () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(start = 16.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = MaterialTheme.typography.labelLarge, color = extraColors.subtle, modifier = Modifier.width(44.dp))
+        Text(label, style = MaterialTheme.typography.labelLarge, color = extraColors.subtle, maxLines = 1, modifier = Modifier.width(48.dp))
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(end = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) { content() }
     }
 }

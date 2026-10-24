@@ -315,7 +315,7 @@ S = {
 "share_title": ("分享", "Share"),
 "share_action": ("分享卡片", "Share card"),
 "share_size": ("尺寸", "Size"),
-"share_template": ("模板", "Template"),
+"share_template": ("模板", "Style"),
 "share_aspect_portrait": ("3:4 小红书", "3:4 RedNote"),
 "share_aspect_square": ("1:1 方图", "1:1 Square"),
 "share_aspect_story": ("9:16 全屏", "9:16 Story"),
