@@ -81,24 +81,48 @@ object Fmt {
 
 @Composable
 fun formatMetric(def: MetricDef, v: Double): Formatted {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    androidx.compose.ui.platform.LocalConfiguration.current // recompose on locale change
+    return formatMetric(def, v) { ctx.getString(it) }
+}
+
+/** Non-composable variant (share cards, exports). [str] resolves a string resource. */
+fun formatMetric(def: MetricDef, v: Double, str: (Int) -> String): Formatted {
     val k = def.kind
     return when (k.unit) {
         MetricUnit.SECONDS -> Formatted(Pace.formatDuration(v.toLong()), "")
         MetricUnit.METERS -> if (k == MetricKind.DISTANCE) {
-            if (v >= 1000) Formatted(Fmt.km(v), stringResource(R.string.unit_km)) else Formatted(Fmt.num(v), stringResource(R.string.unit_m))
-        } else Formatted(Fmt.num(v), stringResource(R.string.unit_m))
-        MetricUnit.PACE_KM -> Formatted(Pace.format(v), stringResource(R.string.unit_per_km))
-        MetricUnit.PACE_100M -> Formatted(Pace.format(v), stringResource(R.string.unit_per_100m))
-        MetricUnit.KMH -> Formatted(Fmt.num(v, 1), stringResource(R.string.unit_kmh))
+            if (v >= 1000) Formatted(Fmt.km(v), str(R.string.unit_km)) else Formatted(Fmt.num(v), str(R.string.unit_m))
+        } else Formatted(Fmt.num(v), str(R.string.unit_m))
+        MetricUnit.PACE_KM -> Formatted(Pace.format(v), str(R.string.unit_per_km))
+        MetricUnit.PACE_100M -> Formatted(Pace.format(v), str(R.string.unit_per_100m))
+        MetricUnit.KMH -> Formatted(Fmt.num(v, 1), str(R.string.unit_kmh))
         MetricUnit.RPE -> Formatted(Fmt.num(v, if (v % 1.0 == 0.0) 0 else 1), "/10")
         MetricUnit.CHOICE -> Formatted(
-            SwimStroke.entries.getOrNull(v.roundToInt())?.let { stringResource(it.labelRes()) } ?: "-", "",
+            SwimStroke.entries.getOrNull(v.roundToInt())?.let { str(it.labelRes()) } ?: "-", "",
         )
         MetricUnit.CUSTOM -> Formatted(Fmt.num(v, if (v % 1.0 == 0.0) 0 else 1), def.customUnit ?: "")
-        MetricUnit.KG -> Formatted(Fmt.num(v, if (v % 1.0 == 0.0) 0 else 1), stringResource(R.string.unit_kg))
-        MetricUnit.COUNT -> Formatted(Fmt.num(v), stringResource(if (k == MetricKind.LAPS) R.string.unit_lengths else R.string.unit_times))
-        else -> Formatted(Fmt.num(v), k.unit.unitRes()?.let { stringResource(it) } ?: "")
+        MetricUnit.KG -> Formatted(Fmt.num(v, if (v % 1.0 == 0.0) 0 else 1), str(R.string.unit_kg))
+        MetricUnit.COUNT -> Formatted(Fmt.num(v), str(if (k == MetricKind.LAPS) R.string.unit_lengths else R.string.unit_times))
+        else -> Formatted(Fmt.num(v), k.unit.unitRes()?.let { str(it) } ?: "")
     }
+}
+
+fun MetricDef.label(str: (Int) -> String): String = customLabel ?: str(kind.labelRes())
+
+/** Non-composable localized sport name. */
+fun SportType.displayName(str: (Int) -> String): String {
+    val preset = Presets.all.firstOrNull { it.presetKey == presetKey }
+    if (preset == null || preset.name != name) return name
+    return str(
+        when (presetKey) {
+            Presets.RUN -> R.string.sport_run
+            Presets.HIKE -> R.string.sport_hike
+            Presets.MOUNTAINEER -> R.string.sport_mountaineer
+            Presets.SWIM -> R.string.sport_swim
+            else -> R.string.sport_cycle
+        }
+    )
 }
 
 @Composable
