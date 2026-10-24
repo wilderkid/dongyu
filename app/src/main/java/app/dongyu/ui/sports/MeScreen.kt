@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.DataObject
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.ScreenLockPortrait
 import androidx.compose.material.icons.filled.Unarchive
@@ -78,6 +79,7 @@ data class MeActions(
     val onWeight: (Double) -> Unit = {},
     val onOemGuide: () -> Unit = {},
     val onSeed: () -> Unit = {},
+    val onHr: () -> Unit = {},
 )
 
 @Composable
@@ -121,6 +123,16 @@ fun MeScreen(state: MeState, a: MeActions) {
                 SegmentedTabs(
                     listOf(stringResource(R.string.theme_system), stringResource(R.string.theme_light), stringResource(R.string.theme_dark)),
                     state.settings.themeMode, a.onTheme, Modifier.fillMaxWidth().padding(top = 10.dp),
+                )
+            }
+        }
+        item {
+            DCard(Modifier.fillMaxWidth(), padding = 4.dp) {
+                NavRow(
+                    Icons.Filled.MonitorHeart, app.dongyu.ui.hr.HrColors.heart, stringResource(R.string.hr_settings),
+                    state.settings.hrDeviceAddress?.let { stringResource(R.string.hr_settings_desc_dev, state.settings.hrDeviceName ?: it) }
+                        ?: stringResource(R.string.hr_settings_desc_none),
+                    a.onHr,
                 )
             }
         }

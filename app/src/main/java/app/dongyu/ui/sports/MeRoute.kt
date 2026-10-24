@@ -20,7 +20,7 @@ class MeViewModel(private val c: AppContainer) : ViewModel() {
         MeState(s, st, BuildConfig.DEBUG, seed)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MeState(showDebug = BuildConfig.DEBUG))
 
-    fun actions(onAdd: () -> Unit, onEdit: (Long) -> Unit, onOem: () -> Unit) = MeActions(
+    fun actions(onAdd: () -> Unit, onEdit: (Long) -> Unit, onOem: () -> Unit, onHr: () -> Unit) = MeActions(
         onAddSport = onAdd,
         onEditSport = onEdit,
         onArchive = { id, a -> viewModelScope.launch { c.sports.setArchived(id, a) } },
@@ -29,6 +29,7 @@ class MeViewModel(private val c: AppContainer) : ViewModel() {
         onKeepScreen = { viewModelScope.launch { c.settings.setKeepScreenOn(it) } },
         onWeight = { viewModelScope.launch { c.settings.setWeightKg(it) } },
         onOemGuide = onOem,
+        onHr = onHr,
         onSeed = {
             if (BuildConfig.DEBUG && !seeding.value) viewModelScope.launch {
                 seeding.value = true
@@ -39,8 +40,8 @@ class MeViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun MeRoute(container: AppContainer, onAddSport: () -> Unit, onEditSport: (Long) -> Unit, onOemGuide: () -> Unit) {
+fun MeRoute(container: AppContainer, onAddSport: () -> Unit, onEditSport: (Long) -> Unit, onOemGuide: () -> Unit, onHr: () -> Unit = {}) {
     val vm: MeViewModel = viewModel { MeViewModel(container) }
     val st by vm.state.collectAsStateWithLifecycle()
-    MeScreen(st, vm.actions(onAddSport, onEditSport, onOemGuide))
+    MeScreen(st, vm.actions(onAddSport, onEditSport, onOemGuide, onHr))
 }

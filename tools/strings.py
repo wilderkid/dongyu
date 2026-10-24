@@ -308,6 +308,10 @@ S = {
 "hr_legend_avg": ("平均", "Avg"),
 "hr_legend_max": ("最高", "Max"),
 "hr_dominant_zone": ("主要区间：%s", "Mostly %s"),
+"hr_open_bt": ("打开蓝牙", "Turn on"),
+"hr_nearby": ("附近的心率设备", "Nearby HR devices"),
+"hr_no_devices_hint": ("点击“搜索设备”。仅显示支持标准心率服务的设备。", "Tap Scan. Only devices with the standard heart-rate service are listed."),
+"hr_age_desc": ("%1$d 岁 · 估算最大心率 %2$d", "%1$d yrs · estimated max %2$d"),
 }
 import os, sys
 from xml.sax.saxutils import escape

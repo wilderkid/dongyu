@@ -64,6 +64,7 @@ object Routes {
     const val STATS = "stats"
     const val ME = "me"
     const val OEM = "oem"
+    const val HR = "hr"
     fun live(sportId: Long, mode: SwimMode? = null, pool: Double = 25.0) = "live/$sportId?mode=${mode?.name ?: ""}&pool=$pool"
     fun edit(workoutId: Long? = null, sportId: Long? = null, finish: Boolean = false) =
         "edit?workoutId=${workoutId ?: -1}&sportId=${sportId ?: -1}&finish=$finish"
@@ -140,8 +141,9 @@ fun AppNav(container: AppContainer) {
             }
             composable(Routes.STATS) { StatsRoute(container, onOpenSport = { nav.navigate(Routes.sportStats(it)) }) }
             composable(Routes.ME) {
-                MeRoute(container, onAddSport = { nav.navigate(Routes.editor()) }, onEditSport = { nav.navigate(Routes.editor(it)) }, onOemGuide = { nav.navigate(Routes.OEM) })
+                MeRoute(container, onAddSport = { nav.navigate(Routes.editor()) }, onEditSport = { nav.navigate(Routes.editor(it)) }, onOemGuide = { nav.navigate(Routes.OEM) }, onHr = { nav.navigate(Routes.HR) })
             }
+            composable(Routes.HR) { app.dongyu.ui.hr.HrSettingsRoute(container, onBack = { nav.popBackStack() }) }
             composable(
                 "live/{sportId}?mode={mode}&pool={pool}",
                 arguments = listOf(
