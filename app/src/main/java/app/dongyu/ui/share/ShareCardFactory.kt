@@ -91,7 +91,7 @@ class ShareCardFactory(private val ctx: Context, private val zone: ZoneId = Zone
         val current = !today.isBefore(r.start) && !today.isAfter(r.end)
         val title = when {
             r.period == Period.WEEK && current -> s(R.string.report_title_week)
-            r.period == Period.WEEK -> s(R.string.report_title_week)
+            r.period == Period.WEEK -> s(R.string.report_title_week_past)
             current -> s(R.string.report_title_month)
             else -> ctx.getString(R.string.report_title_month_past, fmt(R.string.fmt_month_title).format(r.start))
         }

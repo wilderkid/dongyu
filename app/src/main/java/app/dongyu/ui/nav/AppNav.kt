@@ -51,6 +51,8 @@ import app.dongyu.ui.guide.OemGuideRoute
 import app.dongyu.ui.history.HistoryRoute
 import app.dongyu.ui.home.HomeScreen
 import app.dongyu.ui.home.HomeViewModel
+import app.dongyu.ui.share.ShareRoute
+import app.dongyu.ui.share.ShareTarget
 import app.dongyu.ui.live.LiveRoute
 import app.dongyu.ui.sports.MeRoute
 import app.dongyu.ui.stats.SportStatsRoute
@@ -69,6 +71,9 @@ object Routes {
     fun edit(workoutId: Long? = null, sportId: Long? = null, finish: Boolean = false) =
         "edit?workoutId=${workoutId ?: -1}&sportId=${sportId ?: -1}&finish=$finish"
     fun detail(id: Long) = "detail/$id"
+    fun shareWorkout(id: Long) = "share/workout/$id"
+    const val SHARE_REPORT = "share/report"
+    const val TRANSFER = "transfer"
     fun sportStats(id: Long) = "sportStats/$id"
     fun editor(id: Long? = null) = "editor?sportId=${id ?: -1}"
 }
@@ -139,7 +144,7 @@ fun AppNav(container: AppContainer) {
             composable(Routes.HISTORY) {
                 HistoryRoute(container, onOpen = { nav.navigate(Routes.detail(it)) }, onManual = { nav.navigate(Routes.edit(sportId = it)) })
             }
-            composable(Routes.STATS) { StatsRoute(container, onOpenSport = { nav.navigate(Routes.sportStats(it)) }) }
+            composable(Routes.STATS) { StatsRoute(container, onOpenSport = { nav.navigate(Routes.sportStats(it)) }, onShareReport = { nav.navigate(Routes.SHARE_REPORT) }) }
             composable(Routes.ME) {
                 MeRoute(container, onAddSport = { nav.navigate(Routes.editor()) }, onEditSport = { nav.navigate(Routes.editor(it)) }, onOemGuide = { nav.navigate(Routes.OEM) }, onHr = { nav.navigate(Routes.HR) })
             }
@@ -181,7 +186,7 @@ fun AppNav(container: AppContainer) {
             }
             composable("detail/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { e ->
                 val id = e.arguments!!.getLong("id")
-                DetailRoute(container, id, onBack = { nav.popBackStack() }, onEdit = { nav.navigate(Routes.edit(workoutId = it)) })
+                DetailRoute(container, id, onBack = { nav.popBackStack() }, onEdit = { nav.navigate(Routes.edit(workoutId = it)) }, onShare = { nav.navigate(Routes.shareWorkout(it)) })
             }
             composable("sportStats/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { e ->
                 SportStatsRoute(container, e.arguments!!.getLong("id"), onBack = { nav.popBackStack() }, onOpenWorkout = { nav.navigate(Routes.detail(it)) })
@@ -189,6 +194,10 @@ fun AppNav(container: AppContainer) {
             composable("editor?sportId={sportId}", arguments = listOf(navArgument("sportId") { type = NavType.LongType; defaultValue = -1L })) { e ->
                 SportEditorRoute(container, e.arguments!!.getLong("sportId").takeIf { it > 0 }, onDone = { nav.popBackStack() }, onBack = { nav.popBackStack() })
             }
+            composable("share/workout/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { e ->
+                ShareRoute(container, ShareTarget.WorkoutCard(e.arguments!!.getLong("id")), onBack = { nav.popBackStack() })
+            }
+            composable(Routes.SHARE_REPORT) { ShareRoute(container, ShareTarget.Report, onBack = { nav.popBackStack() }) }
             composable(Routes.OEM) { OemGuideRoute(container, onDone = { nav.popBackStack() }) }
         }
     }

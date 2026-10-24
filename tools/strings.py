@@ -346,6 +346,9 @@ S = {
 "report_next": ("下一期", "Next"),
 "fmt_card_date": ("yyyy年M月d日 HH:mm", "MMM d, yyyy · HH:mm"),
 "fmt_range_day": ("M月d日", "MMM d"),
+"report_title_week_past": ("周运动报告", "Weekly report"),
+"share_rendering": ("正在生成卡片…", "Rendering card…"),
+"share_this_period": ("本期", "Current"),
 }
 import os, sys
 from xml.sax.saxutils import escape

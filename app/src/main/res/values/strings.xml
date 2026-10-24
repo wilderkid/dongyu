@@ -346,4 +346,7 @@
     <string name="report_next">下一期</string>
     <string name="fmt_card_date">yyyy年M月d日 HH:mm</string>
     <string name="fmt_range_day">M月d日</string>
+    <string name="report_title_week_past">周运动报告</string>
+    <string name="share_rendering">正在生成卡片…</string>
+    <string name="share_this_period">本期</string>
 </resources>

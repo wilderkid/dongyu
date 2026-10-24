@@ -346,4 +346,7 @@
     <string name="report_next">Next</string>
     <string name="fmt_card_date">MMM d, yyyy · HH:mm</string>
     <string name="fmt_range_day">MMM d</string>
+    <string name="report_title_week_past">Weekly report</string>
+    <string name="share_rendering">Rendering card…</string>
+    <string name="share_this_period">Current</string>
 </resources>

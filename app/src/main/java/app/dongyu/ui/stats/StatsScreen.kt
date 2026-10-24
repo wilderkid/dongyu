@@ -1,5 +1,7 @@
 package app.dongyu.ui.stats
 
+import androidx.compose.material.icons.filled.IosShare
+
 import app.dongyu.domain.stats.HrTrendPoint
 import androidx.compose.material.icons.filled.Favorite
 
@@ -91,7 +93,7 @@ data class StatsState(
 )
 
 @Composable
-fun StatsScreen(state: StatsState, onPeriod: (Period) -> Unit, onOpenSport: (Long) -> Unit) {
+fun StatsScreen(state: StatsState, onPeriod: (Period) -> Unit, onOpenSport: (Long) -> Unit, onShareReport: () -> Unit = {}) {
     val byId = state.sports.associateBy { it.id }
     LazyColumn(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
@@ -99,7 +101,12 @@ fun StatsScreen(state: StatsState, onPeriod: (Period) -> Unit, onOpenSport: (Lon
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text(stringResource(R.string.tab_stats), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.statusBarsPadding().padding(top = 12.dp))
+            Row(Modifier.fillMaxWidth().statusBarsPadding().padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.tab_stats), style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                androidx.compose.material3.FilledTonalIconButton(onClick = onShareReport) {
+                    Icon(androidx.compose.material.icons.Icons.Filled.IosShare, stringResource(R.string.report_share))
+                }
+            }
         }
         item {
             SegmentedTabs(

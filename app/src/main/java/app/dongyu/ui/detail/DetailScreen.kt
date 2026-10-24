@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.StickyNote2
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -88,7 +89,7 @@ data class DetailState(
 }
 
 @Composable
-fun DetailScreen(state: DetailState, onBack: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, dark: Boolean = isSystemInDarkTheme()) {
+fun DetailScreen(state: DetailState, onBack: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, dark: Boolean = isSystemInDarkTheme(), onShare: () -> Unit = {}) {
     val w = state.workout
     val sport = state.sport
     val color = sport.composeColor()
@@ -127,6 +128,8 @@ fun DetailScreen(state: DetailState, onBack: () -> Unit, onEdit: () -> Unit, onD
             val btn = IconButtonDefaults.filledTonalIconButtonColors(containerColor = extraColors.card.copy(alpha = 0.92f))
             FilledTonalIconButton(onClick = onBack, colors = btn) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back)) }
             Spacer(Modifier.weight(1f))
+            FilledTonalIconButton(onClick = onShare, colors = btn) { Icon(Icons.Filled.Share, stringResource(R.string.share_action)) }
+            Spacer(Modifier.width(8.dp))
             FilledTonalIconButton(onClick = onEdit, colors = btn) { Icon(Icons.Filled.Edit, stringResource(R.string.edit_workout)) }
             Spacer(Modifier.width(8.dp))
             FilledTonalIconButton(onClick = { confirmDelete = true }, colors = btn) { Icon(Icons.Filled.Delete, stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error) }

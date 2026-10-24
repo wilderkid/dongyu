@@ -54,8 +54,8 @@ class StatsViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun StatsRoute(container: AppContainer, onOpenSport: (Long) -> Unit) {
+fun StatsRoute(container: AppContainer, onOpenSport: (Long) -> Unit, onShareReport: () -> Unit = {}) {
     val vm: StatsViewModel = viewModel { StatsViewModel(container) }
     val st by vm.state.collectAsStateWithLifecycle()
-    StatsScreen(st, vm::setPeriod, onOpenSport)
+    StatsScreen(st, vm::setPeriod, onOpenSport, onShareReport)
 }

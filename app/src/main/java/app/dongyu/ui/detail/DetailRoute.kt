@@ -48,9 +48,9 @@ class DetailViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun DetailRoute(container: AppContainer, id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit) {
+fun DetailRoute(container: AppContainer, id: Long, onBack: () -> Unit, onEdit: (Long) -> Unit, onShare: (Long) -> Unit = {}) {
     val vm: DetailViewModel = viewModel { DetailViewModel(container) }
     LaunchedEffect(id) { vm.load(id) }
     val st by vm.state.collectAsStateWithLifecycle()
-    st?.let { DetailScreen(it, onBack, { onEdit(id) }, { vm.delete(id, onBack) }) }
+    st?.let { DetailScreen(it, onBack, { onEdit(id) }, { vm.delete(id, onBack) }, onShare = { onShare(id) }) }
 }

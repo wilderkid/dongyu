@@ -82,7 +82,7 @@ data class ReportCardData(
 )
 
 /** Map snapshot covering the whole card, produced with the same [TrackProjection]. */
-class MapBackground(val image: ImageBitmap)
+class MapBackground(val image: ImageBitmap, val attribution: String = "© OpenStreetMap contributors")
 
 private class Palette(
     val text: Color, val sub: Color, val faint: Color, val panel: Color, val dark: Boolean,
@@ -137,6 +137,7 @@ class ShareCardRenderer(private val measurer: TextMeasurer) {
             y = metricGrid(d.metrics, y + 26f, pal, aspect)
             if (hasHr) hrStrip(d.hr, d.hrLabel, y + 24f, pal)
             footer(d.brand, d.tagline, aspect, pal)
+            if (useMap) text(map!!.attribution, aspect.w - 24f, aspect.h - 40f, 18f, Color.White.copy(alpha = 0.55f), align = 2)
         }
 
     private fun DrawScope.header(d: WorkoutCardData, a: CardAspect, pal: Palette) {

@@ -41,7 +41,7 @@ import org.maplibre.geojson.LineString
 import org.maplibre.geojson.Point
 
 /** OpenStreetMap raster tiles; no API key. Coordinates are WGS-84 so no GCJ-02 shift is needed. */
-private fun osmStyle(dark: Boolean): String = """
+internal fun osmStyle(dark: Boolean): String = """
 {
   "version": 8,
   "sources": {
