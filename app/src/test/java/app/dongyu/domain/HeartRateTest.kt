@@ -6,6 +6,7 @@ import app.dongyu.domain.hr.HrZones
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HeartRateParserTest {
@@ -106,5 +107,24 @@ class HrZonesTest {
         assertArrayEquals(sum.zoneSec, HrZones.fromValues(v))
         assertNull(HrZones.fromValues(emptyMap()))
         assertNull(HrZones.summarize(listOf(HrSample(0, 0)), 200))
+    }
+
+    @Test fun downsampleAveragesBucketsAndKeepsShortSeries() {
+        val short = (0 until 10).map { HrSample(it * 1000L, 100 + it) }
+        assertEquals(short, app.dongyu.domain.hr.HrSampling.downsample(short, 20))
+        val long = (0 until 1000).map { HrSample(it * 1000L, if (it % 2 == 0) 100 else 140) }
+        val d = app.dongyu.domain.hr.HrSampling.downsample(long, 100)
+        assertTrue(d.size <= 100)
+        assertTrue(d.all { it.bpm == 120 })
+        assertTrue(d.zipWithNext().all { (a, b) -> b.time > a.time })
+    }
+
+    @Test fun demoCurveStaysPlausible() {
+        val track = app.dongyu.data.seed.DemoData.track(0L, 5000.0, 330.0, 5, kotlin.random.Random(1), app.dongyu.data.seed.DemoData.Terrain.HILL)
+        val c = app.dongyu.data.seed.DemoData.hrCurve(track, 150, kotlin.random.Random(2))
+        assertTrue(c.size > 100)
+        assertTrue(c.all { it.bpm in 60..205 })
+        val s = HrZones.summarize(c, 190)!!
+        assertTrue(s.avg in 130..170)
     }
 }

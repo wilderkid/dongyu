@@ -1,6 +1,8 @@
 package app.dongyu.data.seed
 
 import app.dongyu.domain.metrics.WorkoutSummaryCalculator
+import app.dongyu.domain.hr.HrSample
+import app.dongyu.domain.hr.HrZones
 import app.dongyu.model.Aggregation
 import app.dongyu.model.MetricDef
 import app.dongyu.model.MetricKind
@@ -44,7 +46,7 @@ object DemoData {
         ),
     )
 
-    data class Item(val workout: Workout, val track: List<TrackPoint>)
+    data class Item(val workout: Workout, val track: List<TrackPoint>, val hr: List<HrSample> = emptyList())
 
     /** Hangzhou West Lake area as the demo origin (WGS-84). */
     private const val BASE_LAT = 30.2470
@@ -119,17 +121,46 @@ object DemoData {
             SportFamily.CYCLE -> rnd.nextInt(128, 150)
             else -> rnd.nextInt(115, 140)
         }
+        // ~75% of GPS sessions were "recorded with a strap": synthesize a per-sample curve.
+        val samples = if (withTrack && rnd.nextDouble() < 0.75) hrCurve(track, hr, rnd) else emptyList()
         val values = summary.values.toMutableMap().apply {
             put(MetricKind.HEART_RATE.key, hr.toDouble())
             put(MetricKind.MAX_HEART_RATE.key, (hr + rnd.nextInt(12, 25)).toDouble())
             put(MetricKind.RPE.key, rnd.nextInt(4, 9).toDouble())
+            HrZones.summarize(samples, DEMO_MAX_HR)?.let { putAll(HrZones.toValues(it)) }
         }
         val w = Workout(
             sportId = sport.id, startTime = start, endTime = track.last().time,
             durationSec = summary.movingSec.toLong(), distanceM = summary.distanceM,
             values = values, source = WorkoutSource.GPS,
         )
-        return Item(w, if (withTrack) track else emptyList())
+        return Item(w, if (withTrack) track else emptyList(), samples)
+    }
+
+    const val DEMO_MAX_HR = 190
+
+    /** Warm-up ramp, climbs push HR up, a little noise and a final kick. One sample every 5 s. */
+    fun hrCurve(track: List<TrackPoint>, target: Int, rnd: Random): List<HrSample> {
+        if (track.size < 2) return emptyList()
+        val out = ArrayList<HrSample>()
+        var cur = 92.0
+        val t0 = track.first().time
+        val total = (track.last().time - t0).coerceAtLeast(1)
+        var i = 0
+        var t = t0
+        while (t <= track.last().time) {
+            while (i < track.size - 2 && track[i + 1].time < t) i++
+            val a = track[i]; val b = track[minOf(i + 1, track.size - 1)]
+            val dt = ((b.time - a.time) / 1000.0).coerceAtLeast(1.0)
+            val climb = (((b.altitude ?: 0.0) - (a.altitude ?: 0.0)) / dt).coerceIn(-1.0, 1.0)
+            val frac = (t - t0).toDouble() / total
+            val kick = if (frac > 0.92) 12.0 else 0.0
+            val goal = target + climb * 40 + kick + 6 * sin(frac * 9.0)
+            cur += (goal - cur) * 0.08 + rnd.nextDouble(-1.6, 1.6)
+            out += HrSample(t, cur.roundToInt().coerceIn(60, 205))
+            t += 5_000
+        }
+        return out
     }
 
     /** A wobbly loop around the base point with speed variation and an altitude profile. */

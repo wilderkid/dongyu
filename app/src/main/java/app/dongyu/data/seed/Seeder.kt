@@ -15,6 +15,6 @@ class Seeder(private val sports: SportRepository, private val workouts: WorkoutR
         }
         val all = sports.allSports.first()
         workouts.deleteAll()
-        DemoData.generate(all, LocalDate.now()).forEach { workouts.insertWithTrack(it.workout, it.track) }
+        DemoData.generate(all, LocalDate.now()).forEach { workouts.insertWithTrack(it.workout, it.track, it.hr) }
     }
 }

@@ -156,3 +156,40 @@ class ManualEntryTest {
         assertTrue(MetricKind.ELEVATION_GAIN in ManualEntry.editableKinds(run, hasTrack = false).map { it.kind })
     }
 }
+
+class HrStatsTest {
+    private val zone = ZoneOffset.UTC
+    private val agg = StatsAggregator(zone)
+    private val today = LocalDate.of(2026, 10, 22)
+    private fun w(date: LocalDate, min: Long = 30, values: Map<String, Double> = emptyMap()): Workout {
+        val start = date.atTime(7, 0).toInstant(zone).toEpochMilli()
+        return Workout(sportId = 1, startTime = start, endTime = start + min * 60_000, durationSec = min * 60, values = values)
+    }
+
+    @Test fun hrZoneTotalsSumsOnlyWorkoutsWithZones() {
+        val z1 = mapOf("hrz1" to 60.0, "hrz2" to 120.0, "hrz3" to 300.0, "hrz4" to 0.0, "hrz5" to 30.0)
+        val z2 = mapOf("hrz1" to 10.0, "hrz2" to 0.0, "hrz3" to 100.0, "hrz4" to 50.0, "hrz5" to 0.0)
+        val ws = listOf(w(today, values = z1), w(today, values = z2), w(today))
+        assertEquals(listOf(70L, 120L, 400L, 50L, 30L), agg.hrZoneTotals(ws)!!.toList())
+        assertNull(agg.hrZoneTotals(listOf(w(today))))
+    }
+
+    @Test fun hrTrendIsDurationWeightedAndSkipsEmptyBuckets() {
+        val ws = listOf(
+            w(today, min = 30, values = mapOf("hr_avg" to 150.0, "hr_max" to 170.0)),
+            w(today.minusDays(1), min = 90, values = mapOf("hr_avg" to 130.0, "hr_max" to 160.0)),
+            w(today.minusWeeks(2), min = 40, values = mapOf("hr_avg" to 140.0)),
+            w(today.minusWeeks(1)), // no HR -> bucket skipped
+        )
+        val trend = agg.hrTrend(ws, Period.WEEK, today, 4)
+        assertEquals(2, trend.size)
+        val a = trend[0]
+        val b = trend[1]
+        assertEquals(LocalDate.of(2026, 10, 5), a.bucketStart)
+        assertEquals(140.0, a.avg, 1e-9)
+        assertEquals(140.0, a.max, 1e-9) // falls back to avg when max missing
+        assertEquals(LocalDate.of(2026, 10, 19), b.bucketStart)
+        assertEquals(135.0, b.avg, 1e-9) // (150*30 + 130*90) / 120
+        assertEquals(170.0, b.max, 1e-9)
+    }
+}
