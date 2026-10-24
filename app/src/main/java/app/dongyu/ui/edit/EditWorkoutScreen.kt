@@ -256,7 +256,7 @@ private fun MetricInput(def: MetricDef, value: String, onChange: (String) -> Uni
             Slider(v, { onChange(it.toInt().toString()) }, valueRange = 0f..10f, steps = 9)
         }
         else -> {
-            val unit = def.customUnit ?: def.kind.unit.unitRes()?.let { stringResource(it) } ?: ""
+            val unit = def.customUnit ?: (if (def.kind == app.dongyu.model.MetricKind.LAPS) R.string.unit_lengths else def.kind.unit.unitRes())?.let { stringResource(it) } ?: ""
             OutlinedTextField(
                 value, { onChange(it.filter { c -> c.isDigit() || c == '.' }.take(8)) },
                 label = { Text(def.label()) },

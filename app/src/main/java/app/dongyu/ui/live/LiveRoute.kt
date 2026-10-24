@@ -93,17 +93,28 @@ fun LiveRoute(
         if (perms.isEmpty()) vm.start(swimMode, poolLength) else launcher.launch(perms.toTypedArray())
     }
 
-    if (live.active) {
+    // Once a session has been shown, never fall back to the pre-start screen: after stop/discard the
+    // last live frame stays up until navigation completes (avoids a one-frame flash).
+    var closing by remember { mutableStateOf(false) }
+    var everActive by remember { mutableStateOf(false) }
+    var lastLive by remember { mutableStateOf(live) }
+    if (live.active) { everActive = true; lastLive = live }
+    LaunchedEffect(live.active, everActive, closing) {
+        // Stopped elsewhere (e.g. from the notification) while this screen is visible.
+        if (!live.active && everActive && !closing) onBack()
+    }
+
+    if (live.active || (everActive && closing)) {
         BackHandler(onBack = onBack)
         LiveScreen(
-            state = live,
+            state = if (live.active) live else lastLive,
             onPause = vm::pause, onResume = vm::resume,
-            onStop = { vm.stop(onFinished) },
-            onDiscard = { vm.discard(onBack) },
+            onStop = { closing = true; vm.stop(onFinished) },
+            onDiscard = { closing = true; vm.discard(onBack) },
             onLength = { vm.addLength(it) },
             onBack = onBack,
         )
-    } else {
+    } else if (!everActive) {
         sport?.let { s ->
             PreStartScreen(s, swimMode, needsPermission = needsGps && !hasLoc, onStart = ::requestAndStart, onBack = onBack)
         }

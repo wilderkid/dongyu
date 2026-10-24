@@ -96,6 +96,7 @@ fun formatMetric(def: MetricDef, v: Double): Formatted {
         )
         MetricUnit.CUSTOM -> Formatted(Fmt.num(v, if (v % 1.0 == 0.0) 0 else 1), def.customUnit ?: "")
         MetricUnit.KG -> Formatted(Fmt.num(v, if (v % 1.0 == 0.0) 0 else 1), stringResource(R.string.unit_kg))
+        MetricUnit.COUNT -> Formatted(Fmt.num(v), stringResource(if (k == MetricKind.LAPS) R.string.unit_lengths else R.string.unit_times))
         else -> Formatted(Fmt.num(v), k.unit.unitRes()?.let { stringResource(it) } ?: "")
     }
 }
