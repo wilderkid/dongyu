@@ -1,5 +1,6 @@
 package app.dongyu.ui.editor
 
+import app.dongyu.ui.components.displayName
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -84,7 +85,9 @@ object SportEditorRules {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SportEditorScreen(initial: SportType, isNew: Boolean, onSave: (SportType) -> Unit, onBack: () -> Unit) {
-    var name by remember { mutableStateOf(initial.name) }
+    // Untouched presets are stored with their zh name; show the localized one and keep the stored name if unchanged.
+    val shownName = initial.displayName()
+    var name by remember { mutableStateOf(shownName) }
     var icon by remember { mutableStateOf(initial.icon) }
     var color by remember { mutableStateOf(initial.color) }
     var usesGps by remember { mutableStateOf(initial.usesGps) }
@@ -225,7 +228,7 @@ fun SportEditorScreen(initial: SportType, isNew: Boolean, onSave: (SportType) ->
         }
         Button(
             onClick = {
-                onSave(initial.copy(name = name.trim(), icon = icon, color = color, usesGps = usesGps, metrics = SportEditorRules.normalise(metrics, usesGps), met = met))
+                onSave(initial.copy(name = if (initial.presetKey != null && name.trim() == shownName) initial.name else name.trim(), icon = icon, color = color, usesGps = usesGps, metrics = SportEditorRules.normalise(metrics, usesGps), met = met))
             },
             enabled = name.isNotBlank(),
             modifier = Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp).height(54.dp),
