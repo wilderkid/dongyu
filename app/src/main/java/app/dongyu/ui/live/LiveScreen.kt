@@ -68,6 +68,11 @@ import app.dongyu.model.SportFamily
 import app.dongyu.model.SportType
 import app.dongyu.model.SwimMode
 import app.dongyu.recording.LiveState
+import androidx.compose.material.icons.filled.Favorite
+import app.dongyu.ui.hr.zoneName
+import app.dongyu.ui.hr.HrColors
+import app.dongyu.recording.ble.HrConnState
+import app.dongyu.domain.hr.HrZones
 import app.dongyu.recording.RecStatus
 import app.dongyu.ui.charts.drawTrack
 import app.dongyu.ui.components.Fmt
@@ -132,6 +137,10 @@ fun LiveScreen(
                         row.forEach { m -> MetricBox(m, color, Modifier.weight(1f)) }
                         if (row.size == 1) Spacer(Modifier.weight(1f))
                     }
+                    Spacer(Modifier.height(12.dp))
+                }
+                if (state.usesHr) {
+                    LiveHeartRate(state)
                     Spacer(Modifier.height(12.dp))
                 }
                 if (pool) {
@@ -374,6 +383,50 @@ fun PreStartScreen(
             Spacer(Modifier.height(10.dp))
             Text(stringResource(R.string.start_recording), style = MaterialTheme.typography.titleMedium)
             Spacer(Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+private fun LiveHeartRate(s: LiveState) {
+    val bpm = s.heartRate
+    val zone = bpm?.let { HrZones.zoneOf(it, s.maxHr) }
+    val zc = zone?.let { HrColors.zones[it] } ?: extraColors.subtle
+    val beat = if (bpm != null && !LocalInspectionMode.current) {
+        rememberInfiniteTransition(label = "beat").animateFloat(1f, 0.82f, infiniteRepeatable(tween((60_000 / bpm.coerceIn(40, 220)) / 2), RepeatMode.Reverse), label = "b").value
+    } else 1f
+    val stateText = when (s.hrState) {
+        HrConnState.CONNECTED -> stringResource(R.string.hr_state_connected)
+        HrConnState.CONNECTING -> stringResource(R.string.hr_state_connecting)
+        HrConnState.RECONNECTING -> stringResource(R.string.hr_state_reconnecting)
+        else -> stringResource(R.string.hr_state_idle)
+    }
+    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(extraColors.card).padding(horizontal = 14.dp, vertical = 12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(44.dp).clip(CircleShape).background(HrColors.heart.copy(alpha = 0.14f)), contentAlignment = Alignment.Center) {
+                Icon(Icons.Filled.Favorite, null, tint = HrColors.heart, modifier = Modifier.size((24 * beat).dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.hr_live_label) + " · " + stateText, style = MaterialTheme.typography.labelMedium, color = extraColors.subtle, maxLines = 1)
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(bpm?.toString() ?: "--", style = NumberStyle.Large)
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(R.string.unit_bpm), style = MaterialTheme.typography.labelMedium, color = extraColors.subtle, modifier = Modifier.padding(bottom = 6.dp))
+                }
+            }
+            if (zone != null) {
+                Surface(shape = RoundedCornerShape(50), color = zc) {
+                    Text("Z${zone + 1} " + zoneName(zone), color = Color.White, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
+                }
+            }
+        }
+        Spacer(Modifier.height(10.dp))
+        // zone gauge
+        Row(Modifier.fillMaxWidth().height(8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            HrColors.zones.forEachIndexed { i, c ->
+                Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(50)).background(if (zone == null || i <= zone) c else c.copy(alpha = 0.22f)))
+            }
         }
     }
 }
