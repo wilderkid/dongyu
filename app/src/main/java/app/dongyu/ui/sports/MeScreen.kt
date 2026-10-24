@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.ScreenLockPortrait
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Unarchive
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
@@ -80,6 +81,7 @@ data class MeActions(
     val onOemGuide: () -> Unit = {},
     val onSeed: () -> Unit = {},
     val onHr: () -> Unit = {},
+    val onTransfer: () -> Unit = {},
 )
 
 @Composable
@@ -134,6 +136,7 @@ fun MeScreen(state: MeState, a: MeActions) {
                         ?: stringResource(R.string.hr_settings_desc_none),
                     a.onHr,
                 )
+                NavRow(Icons.Filled.SwapVert, Brand.Ocean, stringResource(R.string.transfer_title), stringResource(R.string.transfer_desc), a.onTransfer)
             }
         }
         item {

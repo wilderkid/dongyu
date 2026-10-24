@@ -21,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,7 +105,12 @@ fun AppNav(container: AppContainer) {
     // Crash / process-death recovery and the one-time OEM guide.
     LaunchedEffect(Unit) {
         if (!container.recording.state.value.active) recoverable = container.workouts.unfinished()
-        if (recoverable == null && !container.settings.settings.first().oemGuideSeen) nav.navigate(Routes.OEM)
+        if (recoverable == null && !container.settings.settings.first().oemGuideSeen && container.pendingImports.value.isEmpty()) nav.navigate(Routes.OEM)
+    }
+    // Files opened with / shared to the app land on the import screen.
+    val pending by container.pendingImports.collectAsState()
+    LaunchedEffect(pending) {
+        if (pending.isNotEmpty() && nav.currentDestination?.route != Routes.TRANSFER) nav.navigate(Routes.TRANSFER) { launchSingleTop = true }
     }
 
     Scaffold(
@@ -146,7 +152,7 @@ fun AppNav(container: AppContainer) {
             }
             composable(Routes.STATS) { StatsRoute(container, onOpenSport = { nav.navigate(Routes.sportStats(it)) }, onShareReport = { nav.navigate(Routes.SHARE_REPORT) }) }
             composable(Routes.ME) {
-                MeRoute(container, onAddSport = { nav.navigate(Routes.editor()) }, onEditSport = { nav.navigate(Routes.editor(it)) }, onOemGuide = { nav.navigate(Routes.OEM) }, onHr = { nav.navigate(Routes.HR) })
+                MeRoute(container, onAddSport = { nav.navigate(Routes.editor()) }, onEditSport = { nav.navigate(Routes.editor(it)) }, onOemGuide = { nav.navigate(Routes.OEM) }, onHr = { nav.navigate(Routes.HR) }, onTransfer = { nav.navigate(Routes.TRANSFER) })
             }
             composable(Routes.HR) { app.dongyu.ui.hr.HrSettingsRoute(container, onBack = { nav.popBackStack() }) }
             composable(
@@ -196,6 +202,9 @@ fun AppNav(container: AppContainer) {
             }
             composable("share/workout/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) { e ->
                 ShareRoute(container, ShareTarget.WorkoutCard(e.arguments!!.getLong("id")), onBack = { nav.popBackStack() })
+            }
+            composable(Routes.TRANSFER) {
+                app.dongyu.ui.transfer.TransferRoute(container, onBack = { nav.popBackStack() }, onOpenWorkout = { nav.navigate(Routes.detail(it)) })
             }
             composable(Routes.SHARE_REPORT) { ShareRoute(container, ShareTarget.Report, onBack = { nav.popBackStack() }) }
             composable(Routes.OEM) { OemGuideRoute(container, onDone = { nav.popBackStack() }) }

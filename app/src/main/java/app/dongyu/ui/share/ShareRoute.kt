@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.CropSquare
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.Button
@@ -186,6 +187,13 @@ class ShareViewModel(private val c: AppContainer, private val app: Context, priv
         toast.value = if (ok) R.string.share_saved else R.string.share_save_failed
     }
 
+    fun exportFile(ctx: Context, format: app.dongyu.transfer.FileFormat) = viewModelScope.launch {
+        val id = (target as? ShareTarget.WorkoutCard)?.id ?: return@launch
+        runCatching { c.transfer.exportWorkout(id, format) }
+            .onSuccess { ctx.startActivity(ShareIO.shareIntent(ctx, it, format.mime)) }
+            .onFailure { toast.value = R.string.share_save_failed }
+    }
+
     fun share(ctx: Context) = viewModelScope.launch {
         val img = ui.value.image ?: return@launch
         val uri = ShareIO.cacheForShare(app, img, ui.value.name)
@@ -212,6 +220,7 @@ fun ShareRoute(container: AppContainer, target: ShareTarget, onBack: () -> Unit)
             ) perm.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) else vm.save()
         },
         onShare = { vm.share(ctx) },
+        onExportFile = { vm.exportFile(ctx, it) },
     )
 }
 
@@ -220,6 +229,7 @@ fun ShareScreen(
     st: ShareUi, isReport: Boolean, onBack: () -> Unit,
     onAspect: (CardAspect) -> Unit, onStyle: (CardStyle) -> Unit, onPeriod: (Period) -> Unit, onShift: (Int) -> Unit,
     onSave: () -> Unit, onShare: () -> Unit,
+    onExportFile: (app.dongyu.transfer.FileFormat) -> Unit = {},
 ) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).statusBarsPadding().navigationBarsPadding()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -278,6 +288,11 @@ fun ShareScreen(
                 if (!isReport && st.hasTrack) add(Triple(CardStyle.MAP, R.string.share_style_map, Icons.Filled.Map))
             }
             styles.forEach { (s, label, icon) -> ChipButton(stringResource(label), st.style == s, icon = icon) { onStyle(s) } }
+        }
+        if (!isReport) OptionRow(stringResource(R.string.share_file)) {
+            app.dongyu.transfer.FileFormat.entries
+                .filter { it != app.dongyu.transfer.FileFormat.GPX || st.hasTrack }
+                .forEach { f -> ChipButton(f.name, false, icon = Icons.Filled.InsertDriveFile) { onExportFile(f) } }
         }
         Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FilledTonalButton(onClick = onSave, enabled = st.image != null && !st.busy, modifier = Modifier.weight(1f).height(52.dp)) {

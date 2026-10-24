@@ -158,4 +158,58 @@ class ScreenshotTest {
     @Test fun oemGuide() = shot("13_oem_guide") {
         OemGuideScreen(OemGuide.Vendor.XIAOMI, {}, {})
     }
+
+    @Test @Config(qualifiers = "+h2300dp") fun hrDetail() = shot("14_hr_detail_zones") {
+        val run = sport(SportFamily.RUN)
+        val item = items.last { it.workout.sportId == run.id && it.hr.size > 100 && it.track.isNotEmpty() }
+        val sum = app.dongyu.domain.hr.HrZones.summarize(item.hr, 190)!!
+        val w = item.workout.copy(values = item.workout.values + app.dongyu.domain.hr.HrZones.toValues(sum))
+        DetailScreen(
+            DetailState(w, run, item.track.map { it.lat to it.lon }, SplitCalculator.splits(item.track), TrackSeries.build(item.track),
+                hrSamples = item.hr, hrMin = sum.min, hrZones = sum.zoneSec, maxHr = 190),
+            {}, {}, {},
+        )
+    }
+
+    @Test fun hrSettings() = shot("15_hr_settings") {
+        app.dongyu.ui.hr.HrSettingsScreen(
+            app.dongyu.ui.hr.HrSettingsState(
+                devices = listOf(
+                    app.dongyu.recording.ble.HrDevice("AA:BB", "Polar H10 8C2F", -58),
+                    app.dongyu.recording.ble.HrDevice("CC:DD", "HUAWEI Band 9-4A1", -71),
+                    app.dongyu.recording.ble.HrDevice("EE:FF", "Garmin HRM-Dual", -84),
+                ),
+                pairedAddress = "AA:BB", pairedName = "Polar H10 8C2F",
+                connState = app.dongyu.recording.ble.HrConnState.CONNECTED, bpm = 132, age = 32,
+            ),
+            app.dongyu.ui.hr.HrSettingsActions(),
+        )
+    }
+
+    @Test fun shareScreen() {
+        val ctx = androidx.test.core.app.ApplicationProvider.getApplicationContext<android.content.Context>()
+        val run = sport(SportFamily.RUN)
+        val item = items.last { it.workout.sportId == run.id && it.hr.isNotEmpty() && it.track.size > 50 }
+        val d = app.dongyu.ui.share.ShareCardFactory(ctx, zone).workout(item.workout, run, item.track.map { it.lat to it.lon }, item.hr)
+        val r = app.dongyu.share.ShareCardRenderer(
+            androidx.compose.ui.text.TextMeasurer(androidx.compose.ui.text.font.createFontFamilyResolver(ctx), androidx.compose.ui.unit.Density(1f), androidx.compose.ui.unit.LayoutDirection.Ltr),
+        )
+        val img = r.renderWorkout(d, app.dongyu.share.CardAspect.PORTRAIT, app.dongyu.share.CardStyle.AURORA)
+        shot("16_share_card_screen") {
+            app.dongyu.ui.share.ShareScreen(
+                app.dongyu.ui.share.ShareUi(hasTrack = true, image = img, busy = false), isReport = false, onBack = {},
+                onAspect = {}, onStyle = {}, onPeriod = {}, onShift = {}, onSave = {}, onShare = {},
+            )
+        }
+    }
+
+    @Test fun transfer() = shot("17_import_export") {
+        app.dongyu.ui.transfer.TransferScreen(
+            app.dongyu.ui.transfer.TransferState(
+                workoutCount = ws.size, trackCount = items.count { it.track.isNotEmpty() },
+                report = app.dongyu.transfer.ImportReport(imported = 3, duplicates = 1, failed = listOf("notes.txt"), lastWorkoutId = 1),
+            ),
+            app.dongyu.ui.transfer.TransferActions(),
+        )
+    }
 }

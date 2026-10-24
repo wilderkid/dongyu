@@ -40,8 +40,8 @@ class MeViewModel(private val c: AppContainer) : ViewModel() {
 }
 
 @Composable
-fun MeRoute(container: AppContainer, onAddSport: () -> Unit, onEditSport: (Long) -> Unit, onOemGuide: () -> Unit, onHr: () -> Unit = {}) {
+fun MeRoute(container: AppContainer, onAddSport: () -> Unit, onEditSport: (Long) -> Unit, onOemGuide: () -> Unit, onHr: () -> Unit = {}, onTransfer: () -> Unit = {}) {
     val vm: MeViewModel = viewModel { MeViewModel(container) }
     val st by vm.state.collectAsStateWithLifecycle()
-    MeScreen(st, vm.actions(onAddSport, onEditSport, onOemGuide, onHr))
+    MeScreen(st, vm.actions(onAddSport, onEditSport, onOemGuide, onHr).copy(onTransfer = onTransfer))
 }
