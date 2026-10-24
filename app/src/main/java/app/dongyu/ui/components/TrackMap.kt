@@ -136,7 +136,9 @@ fun TrackMap(
                         PropertyFactory.circleStrokeColor(android.graphics.Color.WHITE), PropertyFactory.circleStrokeWidth(3f),
                     ))
                     val bounds = LatLngBounds.Builder().includes(path.map { LatLng(it.first, it.second) }).build()
-                    map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, 80))
+                    val d = mv.resources.displayMetrics.density
+                    // Leave room for the status bar + floating buttons on top and the overlapping card below.
+                    map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, (32 * d).toInt(), (96 * d).toInt(), (32 * d).toInt(), (56 * d).toInt()))
                 }
             }
         }

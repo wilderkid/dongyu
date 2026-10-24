@@ -16,7 +16,7 @@ object WorkoutSummaryCalculator {
     const val DEFAULT_WEIGHT_KG = 65.0
 
     fun estimateCalories(met: Double, durationSec: Double, weightKg: Double = DEFAULT_WEIGHT_KG): Double =
-        met * weightKg * durationSec / 3600.0
+        kotlin.math.round(met * weightKg * durationSec / 3600.0)
 
     /** Derives all auto metrics from a GPS track. */
     fun fromTrack(points: List<TrackPoint>, sport: SportType, weightKg: Double = DEFAULT_WEIGHT_KG): TrackSummary {

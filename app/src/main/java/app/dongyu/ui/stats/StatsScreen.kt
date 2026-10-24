@@ -117,7 +117,7 @@ fun StatsScreen(state: StatsState, onPeriod: (Period) -> Unit, onOpenSport: (Lon
             DCard(Modifier.fillMaxWidth()) {
                 SectionTitle(stringResource(R.string.stats_heatmap))
                 val monthFmt = stringResource(R.string.fmt_month_short)
-                CalendarHeatmap(state.heatmap, state.today, 26, MaterialTheme.colorScheme.primary, { monthFmt.format(it.monthValue) })
+                CalendarHeatmap(state.heatmap, state.today, 26, MaterialTheme.colorScheme.primary, { monthLabel(monthFmt, it.monthValue) })
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.less), style = MaterialTheme.typography.labelSmall, color = extraColors.subtle)
                     listOf(0f, 0.3f, 0.5f, 0.75f, 1f).forEach { a ->
@@ -295,7 +295,12 @@ fun HrStatsCard(zones: LongArray?, trend: List<HrTrendPoint>, monthly: Boolean, 
             Text(stringResource(R.string.hr_trend), style = MaterialTheme.typography.labelLarge, color = extraColors.subtle)
             Spacer(Modifier.height(6.dp))
             val monthFmt = stringResource(R.string.fmt_month_short)
-            app.dongyu.ui.hr.HrTrendChart(trend, trend.map { if (monthly) monthFmt.format(it.bucketStart.monthValue) else "${it.bucketStart.monthValue}/${it.bucketStart.dayOfMonth}" })
+            app.dongyu.ui.hr.HrTrendChart(trend, trend.map { if (monthly) monthLabel(monthFmt, it.bucketStart.monthValue) else "${it.bucketStart.monthValue}/${it.bucketStart.dayOfMonth}" })
         }
     }
 }
+
+/** zh uses "%d月"; other locales get the localized short month name (Apr, May…). */
+fun monthLabel(fmt: String, month: Int): String =
+    if (fmt.contains("%d月")) fmt.format(month)
+    else java.time.Month.of(month).getDisplayName(java.time.format.TextStyle.SHORT, java.util.Locale.getDefault())
