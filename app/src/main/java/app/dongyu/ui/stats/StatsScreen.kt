@@ -271,7 +271,7 @@ private fun SportStatRow(row: SportRow, period: Period, onClick: () -> Unit) {
                 Text(row.sport.displayName(), style = MaterialTheme.typography.titleSmall)
                 val t = row.totals
                 val parts = buildList {
-                    add(stringResource(R.string.fmt_count_times, t.count))
+                    add(stringResource(if (t.count == 1) R.string.fmt_count_one else R.string.fmt_count_times, t.count))
                     add(Pace.formatDuration(t.durationSec))
                     if (t.distanceM > 0) add(Fmt.km(t.distanceM) + " " + stringResource(R.string.unit_km))
                 }

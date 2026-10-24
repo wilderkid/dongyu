@@ -380,4 +380,5 @@
     <string name="share_export_file">导出运动文件</string>
     <string name="share_export_desc">发送到其他 App 或电脑</string>
     <string name="share_file">文件</string>
+    <string name="fmt_count_one">%d 次</string>
 </resources>
