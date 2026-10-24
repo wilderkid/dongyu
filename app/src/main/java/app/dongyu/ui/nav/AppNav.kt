@@ -108,9 +108,12 @@ fun AppNav(container: AppContainer) {
         if (recoverable == null && !container.settings.settings.first().oemGuideSeen && container.pendingImports.value.isEmpty()) nav.navigate(Routes.OEM)
     }
     // Files opened with / shared to the app land on the import screen.
-    val pending by container.pendingImports.collectAsState()
-    LaunchedEffect(pending) {
-        if (pending.isNotEmpty() && nav.currentDestination?.route != Routes.TRANSFER) nav.navigate(Routes.TRANSFER) { launchSingleTop = true }
+    // An import screen already on the back stack consumes the files itself, so key on a counter instead.
+    val incoming by container.incomingFiles.collectAsState()
+    LaunchedEffect(incoming) {
+        if (incoming == 0 || nav.currentDestination?.route == Routes.TRANSFER) return@LaunchedEffect
+        val inStack = nav.currentBackStack.value.any { it.destination.route == Routes.TRANSFER }
+        if (!inStack || !nav.popBackStack(Routes.TRANSFER, inclusive = false)) nav.navigate(Routes.TRANSFER) { launchSingleTop = true }
     }
 
     Scaffold(

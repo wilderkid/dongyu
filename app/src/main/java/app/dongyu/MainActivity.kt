@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
             Intent.ACTION_SEND_MULTIPLE -> IntentCompat.getParcelableArrayListExtra(intent, Intent.EXTRA_STREAM, Uri::class.java).orEmpty()
             else -> emptyList()
         }
-        if (uris.isNotEmpty()) (application as DongyuApp).container.pendingImports.value = uris
+        if (uris.isEmpty()) return
+        val c = (application as DongyuApp).container
+        c.pendingImports.value = uris
+        c.incomingFiles.value += 1
     }
 }

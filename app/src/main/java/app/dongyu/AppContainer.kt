@@ -30,4 +30,6 @@ class AppContainer(context: Context) {
     val transfer = TransferService(context.applicationContext, sports, workouts, settings)
     /** Files handed to us via "Open with" / share; consumed by the transfer screen. */
     val pendingImports = MutableStateFlow<List<Uri>>(emptyList())
+    /** Bumped for every incoming file intent so the UI can bring the import screen forward. */
+    val incomingFiles = MutableStateFlow(0)
 }
