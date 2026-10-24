@@ -231,7 +231,7 @@ S = {
 "agg_min": ("最小", "Min"),
 "agg_last": ("最近", "Latest"),
 "oem_guide_title": ("后台保活设置", "Background settings"),
-"oem_guide_intro": ("检测到你的手机是 %s。国产系统会在后台清理应用，按下面几步设置，运动记录才不会中断。", "Your phone is a %s. Some systems kill background apps; follow these steps so recording isn\\'t interrupted."),
+"oem_guide_intro": ("检测到你的手机是 %s。国产系统会在后台清理应用，按下面几步设置，运动记录才不会中断。", "Detected system: %s. Some systems kill background apps; follow these steps so recording isn\\'t interrupted."),
 "oem_step_battery": ("关闭电池优化", "Disable battery optimization"),
 "oem_step_battery_desc": ("在列表中找到「动屿」，设为“不优化”或“无限制”。", "Find Dongyu and set it to “Don\\'t optimize” / “Unrestricted”."),
 "oem_step_autostart": ("允许自启动 / 后台运行", "Allow auto-start / background activity"),

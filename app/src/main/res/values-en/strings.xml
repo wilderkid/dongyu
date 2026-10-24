@@ -232,7 +232,7 @@
     <string name="agg_min">Min</string>
     <string name="agg_last">Latest</string>
     <string name="oem_guide_title">Background settings</string>
-    <string name="oem_guide_intro">Your phone is a %s. Some systems kill background apps; follow these steps so recording isn\'t interrupted.</string>
+    <string name="oem_guide_intro">Detected system: %s. Some systems kill background apps; follow these steps so recording isn\'t interrupted.</string>
     <string name="oem_step_battery">Disable battery optimization</string>
     <string name="oem_step_battery_desc">Find Dongyu and set it to “Don\'t optimize” / “Unrestricted”.</string>
     <string name="oem_step_autostart">Allow auto-start / background activity</string>

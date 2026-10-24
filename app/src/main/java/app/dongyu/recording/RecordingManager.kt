@@ -147,7 +147,7 @@ class RecordingManager(
 
     private suspend fun resetInternals(sport: SportType) {
         segment = 0
-        lastPoint = null
+        lastPoint = null; lastFix = null
         altitudes.clear()
         splitAnchorDist = 0.0
         splitAnchorMs = 0
@@ -168,7 +168,7 @@ class RecordingManager(
         // New segment after recovery: the gap is treated as a pause for GPS sessions.
         segment = (pts.maxOfOrNull { it.segment } ?: -1) + 1
         altitudes += pts.map { it.baroAltitude ?: it.altitude }
-        lastPoint = null
+        lastPoint = null; lastFix = null
         var moving = w.durationSec * 1000
         if (!gps && w.status == WorkoutStatus.RECORDING) {
             // timer sessions keep running while the app was dead
@@ -234,7 +234,7 @@ class RecordingManager(
     fun resume() {
         if (!_state.value.active) return
         segment++
-        lastPoint = null
+        lastPoint = null; lastFix = null
         lastTick = SystemClock.elapsedRealtime()
         _state.update { it.copy(status = RecStatus.RECORDING) }
     }
@@ -248,6 +248,8 @@ class RecordingManager(
     }
 
     /** Called by the service for every location fix. */
+    private var lastFix: Triple<Long, Double, Double>? = null
+
     fun onLocation(time: Long, lat: Double, lon: Double, alt: Double?, accuracy: Float?, speed: Float?) {
         val s = _state.value
         if (!s.active || !s.usesGps) return
@@ -260,7 +262,16 @@ class RecordingManager(
         val prev = lastPoint
         val d = if (prev != null && prev.segment == segment) GeoMath.haversine(prev.lat, prev.lon, lat, lon) else 0.0
         val dt = if (prev != null) (time - prev.time) / 1000.0 else 0.0
-        val v = speed?.toDouble()?.takeIf { it >= 0 } ?: if (dt > 0) d / dt else 0.0
+        // Some devices (and mock providers) report 0 or no speed: fall back to displacement between raw fixes.
+        val lf = lastFix
+        lastFix = Triple(time, lat, lon)
+        val derived = if (lf != null && time > lf.first) {
+            val moved = GeoMath.haversine(lf.second, lf.third, lat, lon)
+            val sec = (time - lf.first) / 1000.0
+            if (sec <= 30 && moved > acc * 0.5) moved / sec else 0.0
+        } else 0.0
+        val reported = speed?.toDouble()?.takeIf { it > 0.3 }
+        val v = reported ?: derived
 
         autoPause?.let { ap ->
             when (ap.update(time, v)) {

@@ -1,5 +1,6 @@
 package app.dongyu.ui.home
 
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -211,7 +212,7 @@ private fun SportTile(s: SportType, onClick: () -> Unit, modifier: Modifier) {
                     contentAlignment = Alignment.Center,
                 ) { Icon(SportIcons.of(s.icon), null, tint = Color.White, modifier = Modifier.size(30.dp)) }
                 Spacer(Modifier.height(8.dp))
-                Text(s.displayName(), style = MaterialTheme.typography.labelLarge, maxLines = 1)
+                Text(s.displayName(), style = MaterialTheme.typography.labelLarge, maxLines = 1, softWrap = false, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, fontSize = if (s.displayName().length > 11) 12.sp else androidx.compose.ui.unit.TextUnit.Unspecified)
             }
             Icon(
                 if (s.usesGps) Icons.Filled.SatelliteAlt else if (s.family == SportFamily.SWIM) Icons.Filled.Waves else Icons.Filled.Timer,
