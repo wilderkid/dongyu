@@ -74,6 +74,9 @@ data class SportStatsState(
     val records: List<PersonalRecord> = emptyList(),
     val comparison: List<MetricComparison> = emptyList(),
     val trends: List<MetricTrend> = emptyList(),
+    val hrZones: LongArray? = null,
+    val hrTrend: List<app.dongyu.domain.stats.HrTrendPoint> = emptyList(),
+    val maxHr: Int = 190,
 )
 
 @Composable
@@ -94,6 +97,9 @@ fun SportStatsScreen(state: SportStatsState, onBucket: (Period) -> Unit, onBack:
                 if (state.bucket == Period.WEEK) 0 else 1, { onBucket(if (it == 0) Period.WEEK else Period.MONTH) },
                 Modifier.fillMaxWidth().padding(horizontal = 16.dp),
             )
+        }
+        if (state.hrZones != null || state.hrTrend.isNotEmpty()) item {
+            Box(Modifier.padding(horizontal = 16.dp)) { HrStatsCard(state.hrZones, state.hrTrend, state.bucket == Period.MONTH, state.maxHr) }
         }
         items(state.trends, key = { it.metric.id }) { t -> TrendCard(t, color, state.bucket) }
     }

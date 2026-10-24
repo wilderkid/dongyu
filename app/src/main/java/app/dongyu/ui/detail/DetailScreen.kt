@@ -42,7 +42,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import app.dongyu.R
+import app.dongyu.domain.hr.HrSample
+import app.dongyu.domain.hr.HrZones
 import app.dongyu.domain.metrics.Pace
+import app.dongyu.ui.hr.HrDetailCard
 import app.dongyu.domain.metrics.SeriesPoint
 import app.dongyu.domain.metrics.Split
 import app.dongyu.model.DerivedKeys
@@ -76,7 +79,13 @@ data class DetailState(
     val path: List<Pair<Double, Double>> = emptyList(),
     val splits: List<Split> = emptyList(),
     val series: List<SeriesPoint> = emptyList(),
-)
+    val hrSamples: List<HrSample> = emptyList(),
+    val hrMin: Int? = null,
+    val hrZones: LongArray? = null,
+    val maxHr: Int = 190,
+) {
+    val hasHr: Boolean get() = hrSamples.isNotEmpty() || hrZones != null
+}
 
 @Composable
 fun DetailScreen(state: DetailState, onBack: () -> Unit, onEdit: () -> Unit, onDelete: () -> Unit, dark: Boolean = isSystemInDarkTheme()) {
@@ -94,7 +103,11 @@ fun DetailScreen(state: DetailState, onBack: () -> Unit, onEdit: () -> Unit, onD
             }
             Column(Modifier.padding(horizontal = 16.dp).offset(y = if (hasMap) (-28).dp else (-60).dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 HeaderCard(w, sport)
-                MetricsCard(w, sport)
+                MetricsCard(w, sport, skipHr = state.hasHr)
+                if (state.hasHr) HrDetailCard(
+                    avg = w.values[HrZones.AVG_KEY]?.toInt(), peak = w.values[HrZones.MAX_KEY]?.toInt(), min = state.hrMin,
+                    samples = state.hrSamples, zoneSec = state.hrZones, maxHr = state.maxHr,
+                )
                 if (state.splits.isNotEmpty()) SplitsCard(state.splits, sport)
                 if (state.series.isNotEmpty()) ChartsCard(state.series, sport)
                 val records = w.values.filterKeys { it.startsWith("best_") }
@@ -172,9 +185,10 @@ private fun Big(v: String, u: String, l: String) {
 }
 
 @Composable
-private fun MetricsCard(w: Workout, sport: SportType) {
+private fun MetricsCard(w: Workout, sport: SportType, skipHr: Boolean = false) {
     val color = sport.composeColor()
-    val defs = sport.metrics.filter { it.kind != MetricKind.NOTE && it.kind != MetricKind.DISTANCE && it.kind != MetricKind.DURATION && w.valueOf(it.id) != null }
+    val defs = sport.metrics.filter { it.kind != MetricKind.NOTE && it.kind != MetricKind.DISTANCE && it.kind != MetricKind.DURATION && w.valueOf(it.id) != null &&
+        !(skipHr && (it.kind == MetricKind.HEART_RATE || it.kind == MetricKind.MAX_HEART_RATE)) }
     if (defs.isEmpty()) return
     DCard(Modifier.fillMaxWidth()) {
         SectionTitle(stringResource(R.string.detail_metrics))

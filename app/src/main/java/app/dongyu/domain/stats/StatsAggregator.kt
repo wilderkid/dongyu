@@ -1,5 +1,6 @@
 package app.dongyu.domain.stats
 
+import app.dongyu.domain.hr.HrZones
 import app.dongyu.model.Aggregation
 import app.dongyu.model.DerivedKeys
 import app.dongyu.model.MetricDef
@@ -40,6 +41,7 @@ data class WeekStack(val weekStart: LocalDate, val bySport: Map<Long, Double>) {
 data class Streaks(val currentDays: Int, val longestDays: Int, val currentWeeks: Int, val longestWeeks: Int)
 data class TrendPoint(val bucketStart: LocalDate, val value: Double)
 data class PersonalRecord(val key: String, val value: Double, val workoutId: Long, val date: LocalDate, val lowerIsBetter: Boolean)
+data class HrTrendPoint(val bucketStart: LocalDate, val avg: Double, val max: Double)
 data class MetricComparison(val metric: MetricDef, val current: Double?, val previous: Double?)
 
 /** Pure, testable aggregation over workouts. Weeks start on Monday (Chinese convention). */
@@ -230,5 +232,30 @@ class StatsAggregator(private val zone: ZoneId = ZoneId.systemDefault()) {
             }
         }
         return out
+    }
+
+    /** Summed time-in-zone (seconds, Z1..Z5) over workouts that recorded heart rate; null when none did. */
+    fun hrZoneTotals(ws: List<Workout>): LongArray? {
+        val per = ws.mapNotNull { HrZones.fromValues(it.values) }
+        if (per.isEmpty()) return null
+        return LongArray(HrZones.COUNT) { z -> per.sumOf { it[z] } }
+    }
+
+    /** Duration-weighted average HR and peak HR per bucket (oldest first); buckets without HR are skipped. */
+    fun hrTrend(ws: List<Workout>, bucket: Period, ref: LocalDate, buckets: Int): List<HrTrendPoint> {
+        val last = periodStart(bucket, ref)
+        return (buckets - 1 downTo 0).mapNotNull { back ->
+            val start = when (bucket) {
+                Period.WEEK -> last.minusWeeks(back.toLong())
+                Period.MONTH -> last.minusMonths(back.toLong())
+                Period.YEAR -> last.minusYears(back.toLong())
+            }
+            val withHr = inRange(ws, start, periodEndExclusive(bucket, start)).filter { (it.values[HrZones.AVG_KEY] ?: 0.0) > 0 }
+            if (withHr.isEmpty()) return@mapNotNull null
+            val weight = withHr.sumOf { it.durationSec.coerceAtLeast(1) }.toDouble()
+            val avg = withHr.sumOf { it.values[HrZones.AVG_KEY]!! * it.durationSec.coerceAtLeast(1) } / weight
+            val max = withHr.maxOf { it.values[HrZones.MAX_KEY] ?: it.values[HrZones.AVG_KEY]!! }
+            HrTrendPoint(start, avg, max)
+        }
     }
 }

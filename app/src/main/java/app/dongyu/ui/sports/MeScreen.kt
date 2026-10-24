@@ -188,7 +188,7 @@ private fun SportRow(s: SportType, a: MeActions) {
 }
 
 @Composable
-private fun SwitchRow(icon: ImageVector, color: Color, title: String, desc: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+fun SwitchRow(icon: ImageVector, color: Color, title: String, desc: String, checked: Boolean, onChange: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth().clickable { onChange(!checked) }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
         IconBadge(icon, color, 38.dp)
         Spacer(Modifier.width(12.dp))
@@ -201,7 +201,7 @@ private fun SwitchRow(icon: ImageVector, color: Color, title: String, desc: Stri
 }
 
 @Composable
-private fun NavRow(icon: ImageVector, color: Color, title: String, desc: String, onClick: () -> Unit) {
+fun NavRow(icon: ImageVector, color: Color, title: String, desc: String, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
         IconBadge(icon, color, 38.dp)
         Spacer(Modifier.width(12.dp))

@@ -1,5 +1,8 @@
 package app.dongyu.ui.stats
 
+import app.dongyu.domain.stats.HrTrendPoint
+import androidx.compose.material.icons.filled.Favorite
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,6 +84,10 @@ data class StatsState(
     val sports: List<SportType> = emptyList(),
     val perSport: List<SportRow> = emptyList(),
     val hasData: Boolean = false,
+    val hrZones: LongArray? = null,
+    val hrTrend: List<HrTrendPoint> = emptyList(),
+    val hrTrendMonthly: Boolean = false,
+    val maxHr: Int = 190,
 )
 
 @Composable
@@ -134,6 +141,7 @@ fun StatsScreen(state: StatsState, onPeriod: (Period) -> Unit, onOpenSport: (Lon
                 )
             }
         }
+        if (state.hrZones != null || state.hrTrend.isNotEmpty()) item { HrStatsCard(state.hrZones, state.hrTrend, state.hrTrendMonthly, state.maxHr) }
         item {
             DCard(Modifier.fillMaxWidth()) {
                 SectionTitle(stringResource(R.string.stats_weekly_volume))
@@ -263,6 +271,31 @@ private fun SportStatRow(row: SportRow, period: Period, onClick: () -> Unit) {
                 Text(parts.joinToString(" · "), style = MaterialTheme.typography.labelMedium, color = extraColors.subtle)
             }
             Icon(Icons.Filled.ChevronRight, null, tint = extraColors.subtle)
+        }
+    }
+}
+
+@Composable
+fun HrStatsCard(zones: LongArray?, trend: List<HrTrendPoint>, monthly: Boolean, maxHr: Int) {
+    DCard(Modifier.fillMaxWidth()) {
+        SectionTitle(stringResource(R.string.hr_title), action = {
+            app.dongyu.ui.components.IconBadge(Icons.Filled.Favorite, app.dongyu.ui.hr.HrColors.heart, 30.dp)
+        })
+        if (zones != null && zones.sum() > 0) {
+            Text(stringResource(R.string.hr_zone_distribution), style = MaterialTheme.typography.labelLarge, color = extraColors.subtle)
+            Spacer(Modifier.height(8.dp))
+            val names = (0 until 5).map { app.dongyu.ui.hr.zoneName(it) }
+            DonutChart(
+                zones.mapIndexed { z, sec -> DonutSlice(sec.toFloat(), app.dongyu.ui.hr.HrColors.zones[z], "Z${z + 1} " + names[z], Fmt.hm(sec)) }.reversed(),
+                centerValue = Fmt.hours(zones.sum()), centerLabel = stringResource(R.string.unit_hours), size = 130.dp,
+            )
+        }
+        if (trend.isNotEmpty()) {
+            Spacer(Modifier.height(14.dp))
+            Text(stringResource(R.string.hr_trend), style = MaterialTheme.typography.labelLarge, color = extraColors.subtle)
+            Spacer(Modifier.height(6.dp))
+            val monthFmt = stringResource(R.string.fmt_month_short)
+            app.dongyu.ui.hr.HrTrendChart(trend, trend.map { if (monthly) monthFmt.format(it.bucketStart.monthValue) else "${it.bucketStart.monthValue}/${it.bucketStart.dayOfMonth}" })
         }
     }
 }

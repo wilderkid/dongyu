@@ -16,6 +16,8 @@ data class HrSummary(val avg: Int, val max: Int, val min: Int, val zoneSec: Long
  */
 object HrZones {
     const val COUNT = 5
+    const val AVG_KEY = "hr_avg"
+    const val MAX_KEY = "hr_max"
     val lowerPct = doubleArrayOf(0.5, 0.6, 0.7, 0.8, 0.9)
     /** Workout value keys for seconds spent in each zone. */
     val keys = (1..COUNT).map { "hrz$it" }
@@ -71,8 +73,18 @@ object HrZones {
     }
 
     fun toValues(summary: HrSummary): Map<String, Double> = buildMap {
-        put("hr_avg", summary.avg.toDouble())
-        put("hr_max", summary.max.toDouble())
+        put(AVG_KEY, summary.avg.toDouble())
+        put(MAX_KEY, summary.max.toDouble())
         summary.zoneSec.forEachIndexed { i, v -> put(HrZones.keys[i], v.toDouble()) }
+    }
+}
+
+object HrSampling {
+    /** Bucket-averages [samples] down to at most [maxPoints] for charting. */
+    fun downsample(samples: List<HrSample>, maxPoints: Int): List<HrSample> {
+        val s = samples.filter { it.bpm in 25..250 }
+        if (s.size <= maxPoints) return s
+        val per = (s.size + maxPoints - 1) / maxPoints
+        return s.chunked(per).map { c -> HrSample(c[c.size / 2].time, c.sumOf { it.bpm } / c.size) }
     }
 }

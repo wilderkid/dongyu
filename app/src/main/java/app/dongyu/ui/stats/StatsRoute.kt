@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import java.time.LocalDate
 
 object StatsBuilder {
-    fun dashboard(agg: StatsAggregator, sports: List<SportType>, ws: List<Workout>, period: Period, today: LocalDate): StatsState {
+    fun dashboard(agg: StatsAggregator, sports: List<SportType>, ws: List<Workout>, period: Period, today: LocalDate, maxHr: Int = 190): StatsState {
         val start = agg.periodStart(period, today)
         val inPeriod = agg.inRange(ws, start, agg.periodEndExclusive(period, start))
         val used = ws.map { it.sportId }.toSet()
@@ -37,14 +37,18 @@ object StatsBuilder {
             perSport = shown.map { s -> SportRow(s, agg.totals(inPeriod.filter { it.sportId == s.id })) }
                 .sortedByDescending { it.totals.durationSec },
             hasData = ws.isNotEmpty(),
+            hrZones = agg.hrZoneTotals(inPeriod),
+            hrTrend = agg.hrTrend(ws, if (period == Period.YEAR) Period.MONTH else Period.WEEK, today, 12).takeIf { t -> t.size >= 1 } ?: emptyList(),
+            hrTrendMonthly = period == Period.YEAR,
+            maxHr = maxHr,
         )
     }
 }
 
 class StatsViewModel(private val c: AppContainer) : ViewModel() {
     private val period = MutableStateFlow(Period.WEEK)
-    val state = combine(c.sports.allSports, c.workouts.finished, period) { s, w, p ->
-        StatsBuilder.dashboard(c.stats, s, w, p, LocalDate.now())
+    val state = combine(c.sports.allSports, c.workouts.finished, period, c.settings.settings) { s, w, p, st ->
+        StatsBuilder.dashboard(c.stats, s, w, p, LocalDate.now(), st.effectiveMaxHr)
     }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), StatsState())
     fun setPeriod(p: Period) { period.value = p }
 }
