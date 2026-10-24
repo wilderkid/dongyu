@@ -30,7 +30,7 @@ data class SportType(
     val showsPace: Boolean get() = has(MetricKind.PACE)
 }
 
-enum class WorkoutSource { GPS, TIMER, MANUAL }
+enum class WorkoutSource { GPS, TIMER, MANUAL, IMPORT }
 enum class WorkoutStatus { RECORDING, PAUSED, FINISHED }
 enum class SwimMode { POOL, OPEN_WATER }
 

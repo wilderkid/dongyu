@@ -59,3 +59,16 @@ data class TrackPointEntity(
     val segment: Int,
     val baroAltitude: Double?,
 )
+
+/** One heart-rate reading from a BLE strap, stored independently of GPS fixes. */
+@Entity(
+    tableName = "hr_samples",
+    foreignKeys = [ForeignKey(entity = WorkoutEntity::class, parentColumns = ["id"], childColumns = ["workoutId"], onDelete = ForeignKey.CASCADE)],
+    indices = [Index("workoutId")],
+)
+data class HrSampleEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val workoutId: Long,
+    val time: Long,
+    val bpm: Int,
+)

@@ -47,7 +47,9 @@ class RecordingService : LifecycleService(), LocationListener {
             if (s.status == RecStatus.PAUSED) manager.resume() else manager.pause()
             return START_STICKY
         }
-        if (!manager.hasLocationPermission()) {
+        val st = manager.state.value
+        val wantsGps = intent == null || st.usesGps
+        if (wantsGps && !manager.hasLocationPermission() && !st.usesHr) {
             stopSelf(); return START_NOT_STICKY
         }
         startInForeground()
@@ -56,14 +58,33 @@ class RecordingService : LifecycleService(), LocationListener {
             val c = (application as DongyuApp).container
             lifecycleScope.launch { c.workouts.unfinished()?.let { manager.recover(it) } }
         }
-        startLocation()
+        if (manager.hasLocationPermission() && (intent == null || manager.state.value.usesGps)) startLocation()
         observeForNotification()
         return START_STICKY
     }
 
     private fun startInForeground() {
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else 0
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(manager.state.value), type)
+        val s = manager.state.value
+        var type = 0
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            if (manager.hasLocationPermission() && (s.usesGps || !s.active)) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            // BLE heart-rate strap: connectedDevice is the type Android prescribes for Bluetooth peripherals.
+            if (s.usesHr && manager.hr.hasPermissions()) {
+                type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+                if (Build.VERSION.SDK_INT >= 34) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH
+            }
+            if (type == 0) type = ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+        }
+        val n = buildNotification(manager.state.value)
+        try {
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, n, type)
+        } catch (e: SecurityException) {
+            // Some ROMs are stricter about combined types; fall back to the essential one.
+            val fallback = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                if (s.usesGps) ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+            } else 0
+            runCatching { ServiceCompat.startForeground(this, NOTIFICATION_ID, n, fallback) }
+        }
         if (wakeLock == null) {
             val pm = getSystemService(POWER_SERVICE) as PowerManager
             wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "dongyu:recording").apply {

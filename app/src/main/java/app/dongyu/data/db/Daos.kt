@@ -18,6 +18,9 @@ interface SportTypeDao {
     @Query("SELECT * FROM sport_types WHERE id = :id")
     suspend fun get(id: Long): SportTypeEntity?
 
+    @Query("SELECT * FROM sport_types ORDER BY sortOrder, id")
+    suspend fun all(): List<SportTypeEntity>
+
     @Query("SELECT COUNT(*) FROM sport_types")
     suspend fun count(): Int
 
@@ -44,6 +47,12 @@ interface WorkoutDao {
 
     @Query("SELECT * FROM workouts WHERE id = :id")
     suspend fun get(id: Long): WorkoutEntity?
+
+    @Query("SELECT * FROM workouts WHERE status = 'FINISHED' AND startTime BETWEEN :from AND :to")
+    suspend fun startingBetween(from: Long, to: Long): List<WorkoutEntity>
+
+    @Query("SELECT * FROM workouts WHERE status = 'FINISHED' ORDER BY startTime")
+    suspend fun allFinished(): List<WorkoutEntity>
 
     @Query("SELECT * FROM workouts WHERE status != 'FINISHED' ORDER BY startTime DESC LIMIT 1")
     suspend fun unfinished(): WorkoutEntity?
@@ -83,4 +92,16 @@ interface TrackPointDao {
 
     @Query("SELECT MAX(segment) FROM track_points WHERE workoutId = :workoutId")
     suspend fun maxSegment(workoutId: Long): Int?
+}
+
+@Dao
+interface HrSampleDao {
+    @Insert
+    suspend fun insert(s: HrSampleEntity): Long
+
+    @Insert
+    suspend fun insertAll(list: List<HrSampleEntity>)
+
+    @Query("SELECT * FROM hr_samples WHERE workoutId = :workoutId ORDER BY time")
+    suspend fun forWorkout(workoutId: Long): List<HrSampleEntity>
 }

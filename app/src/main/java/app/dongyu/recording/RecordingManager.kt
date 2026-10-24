@@ -11,7 +11,10 @@ import app.dongyu.domain.metrics.ElevationCalculator
 import app.dongyu.domain.metrics.GeoMath
 import app.dongyu.domain.metrics.Pace
 import app.dongyu.domain.metrics.WorkoutSummaryCalculator
+import app.dongyu.domain.hr.HrZones
 import app.dongyu.model.MetricKind
+import app.dongyu.recording.ble.HrConnState
+import app.dongyu.recording.ble.HeartRateMonitor
 import app.dongyu.model.SportFamily
 import app.dongyu.model.SportType
 import app.dongyu.model.SwimMode
@@ -24,6 +27,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -52,7 +56,12 @@ data class LiveState(
     val path: List<Pair<Double, Double>> = emptyList(),
     val lastSplitPace: Double? = null,
     val barometer: Boolean = false,
+    /** Non-null when a heart-rate strap is configured for this session. */
+    val hrState: HrConnState? = null,
+    val heartRate: Int? = null,
+    val maxHr: Int = 190,
 ) {
+    val usesHr: Boolean get() = hrState != null
     val active: Boolean get() = status != RecStatus.IDLE
     val avgPace: Double? get() = Pace.secPerKm(distanceM, movingMs / 1000.0)
     val avgSpeedKmh: Double? get() = Pace.kmh(distanceM, movingMs / 1000.0)
@@ -69,6 +78,7 @@ class RecordingManager(
     private val workouts: WorkoutRepository,
     private val settings: SettingsStore,
     private val scope: CoroutineScope,
+    val hr: HeartRateMonitor,
 ) {
     private val _state = MutableStateFlow(LiveState())
     val state: StateFlow<LiveState> = _state
@@ -83,6 +93,8 @@ class RecordingManager(
     private var splitAnchorDist = 0.0
     private var splitAnchorMs = 0L
     private var barometer: Barometer? = null
+    private var hrJob: Job? = null
+    @Volatile private var lastHrSave = 0L
 
     suspend fun start(sport: SportType, swimMode: SwimMode? = null, poolLength: Double = 25.0): Long = mutex.withLock {
         val gps = sport.usesGps && swimMode != SwimMode.POOL || swimMode == SwimMode.OPEN_WATER
@@ -101,8 +113,36 @@ class RecordingManager(
             swimMode = swimMode, poolLength = poolLength, barometer = barometer?.available == true,
         )
         startTicker()
-        if (gps) RecordingService.start(context)
+        startHr(id)
+        if (gps || _state.value.usesHr) RecordingService.start(context)
         id
+    }
+
+    /** Connects the remembered strap (if any) and streams readings into the live state and the DB. */
+    private suspend fun startHr(workoutId: Long) {
+        stopHr()
+        val st = settings.settings.first()
+        val addr = st.hrDeviceAddress ?: return
+        if (!hr.isSupported || !hr.hasPermissions()) return
+        _state.update { it.copy(hrState = HrConnState.CONNECTING, maxHr = st.effectiveMaxHr) }
+        hr.onMeasurement = { t, m ->
+            if (_state.value.status == RecStatus.RECORDING && m.bpm in 25..250 && m.contact != false && t - lastHrSave >= 1000) {
+                lastHrSave = t
+                scope.launch { workouts.addHr(workoutId, t, m.bpm) }
+            }
+        }
+        hr.connect(addr)
+        hrJob = scope.launch {
+            combine(hr.state, hr.bpm) { a, b -> a to b }.collect { (a, b) ->
+                _state.update { if (it.active) it.copy(hrState = a, heartRate = b) else it }
+            }
+        }
+    }
+
+    private fun stopHr() {
+        hr.onMeasurement = null
+        hrJob?.cancel(); hrJob = null
+        hr.disconnect()
     }
 
     private suspend fun resetInternals(sport: SportType) {
@@ -149,7 +189,8 @@ class RecordingManager(
         splitAnchorDist = (w.distanceM / 1000).toInt() * 1000.0
         splitAnchorMs = moving
         startTicker()
-        if (gps) RecordingService.start(context)
+        startHr(w.id)
+        if (gps || _state.value.usesHr) RecordingService.start(context)
         true
     }
 
@@ -264,10 +305,12 @@ class RecordingManager(
         val id = s.workoutId ?: return@withLock null
         ticker?.cancel()
         barometer?.stop()
+        stopHr()
         RecordingService.stop(context)
         val w = workouts.get(id) ?: return@withLock null
         val sport = s.sport ?: sports.get(w.sportId)
-        val weight = settings.settings.first().weightKg
+        val st = settings.settings.first()
+        val weight = st.weightKg
         var values = w.values.toMutableMap()
         var distance = s.distanceM
         var moving = s.movingMs / 1000
@@ -287,6 +330,7 @@ class RecordingManager(
                 Pace.secPer100m(distance, moving.toDouble())?.let { values[MetricKind.SWIM_PACE.key] = it }
             }
         }
+        HrZones.summarize(workouts.hrSamples(id), st.effectiveMaxHr)?.let { values.putAll(HrZones.toValues(it)) }
         workouts.update(
             w.copy(
                 endTime = System.currentTimeMillis(), durationSec = moving, distanceM = distance,
@@ -301,6 +345,7 @@ class RecordingManager(
     suspend fun discard(id: Long? = _state.value.workoutId) = mutex.withLock {
         ticker?.cancel()
         barometer?.stop()
+        stopHr()
         RecordingService.stop(context)
         id?.let { workouts.delete(it) }
         _state.value = LiveState()

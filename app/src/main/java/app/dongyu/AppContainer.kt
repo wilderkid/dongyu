@@ -8,6 +8,7 @@ import app.dongyu.data.repo.WorkoutRepository
 import app.dongyu.data.seed.Seeder
 import app.dongyu.domain.stats.StatsAggregator
 import app.dongyu.recording.RecordingManager
+import app.dongyu.recording.ble.HeartRateMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -21,5 +22,6 @@ class AppContainer(context: Context) {
     val workouts = WorkoutRepository(db)
     val stats = StatsAggregator()
     val seeder = Seeder(sports, workouts)
-    val recording = RecordingManager(context.applicationContext, sports, workouts, settings, appScope)
+    val heartRate = HeartRateMonitor(context.applicationContext, appScope)
+    val recording = RecordingManager(context.applicationContext, sports, workouts, settings, appScope, heartRate)
 }

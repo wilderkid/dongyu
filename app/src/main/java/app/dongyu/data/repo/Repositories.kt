@@ -1,6 +1,9 @@
 package app.dongyu.data.repo
 
+import androidx.room.withTransaction
 import app.dongyu.data.db.AppDatabase
+import app.dongyu.data.db.HrSampleEntity
+import app.dongyu.domain.hr.HrSample
 import app.dongyu.data.db.toEntity
 import app.dongyu.data.db.toModel
 import app.dongyu.domain.metrics.SplitCalculator
@@ -29,6 +32,8 @@ class SportRepository(private val db: AppDatabase) {
         return dao.upsert(toSave.toEntity())
     }
 
+    suspend fun all(): List<SportType> = dao.all().map { it.toModel() }
+
     suspend fun setArchived(id: Long, archived: Boolean) {
         dao.get(id)?.let { dao.upsert(it.copy(archived = archived)) }
     }
@@ -37,6 +42,7 @@ class SportRepository(private val db: AppDatabase) {
 class WorkoutRepository(private val db: AppDatabase) {
     private val dao = db.workoutDao()
     private val points = db.trackPointDao()
+    private val hr = db.hrSampleDao()
 
     val finished: Flow<List<Workout>> = dao.observeFinished().map { l -> l.map { it.toModel() } }
     fun finishedBySport(sportId: Long): Flow<List<Workout>> = dao.observeFinishedBySport(sportId).map { l -> l.map { it.toModel() } }
@@ -55,14 +61,26 @@ class WorkoutRepository(private val db: AppDatabase) {
     suspend fun points(workoutId: Long): List<TrackPoint> = points.forWorkout(workoutId).map { it.toModel() }
     suspend fun maxSegment(workoutId: Long): Int? = points.maxSegment(workoutId)
 
+    suspend fun addHr(workoutId: Long, time: Long, bpm: Int) = hr.insert(HrSampleEntity(workoutId = workoutId, time = time, bpm = bpm))
+    suspend fun addHrSamples(workoutId: Long, list: List<HrSample>) = hr.insertAll(list.map { HrSampleEntity(workoutId = workoutId, time = it.time, bpm = it.bpm) })
+    suspend fun hrSamples(workoutId: Long): List<HrSample> = hr.forWorkout(workoutId).map { HrSample(it.time, it.bpm) }
+
     suspend fun splits(workoutId: Long, splitM: Double) = SplitCalculator.splits(points(workoutId), splitM)
 
     /** Inserts a finished workout together with its track in one transaction (used by seeding). */
-    suspend fun insertWithTrack(w: Workout, track: List<TrackPoint>): Long {
-        val id = insert(w)
-        if (track.isNotEmpty()) addPoints(id, track)
-        return id
-    }
+    suspend fun insertWithTrack(w: Workout, track: List<TrackPoint>, hrSamples: List<HrSample> = emptyList()): Long =
+        db.withTransaction {
+            val id = insert(w)
+            if (track.isNotEmpty()) addPoints(id, track)
+            if (hrSamples.isNotEmpty()) addHrSamples(id, hrSamples)
+            id
+        }
+
+    /** Finished workouts whose start time is within [toleranceMs] of [startTime] (import dedupe). */
+    suspend fun startingNear(startTime: Long, toleranceMs: Long = 60_000): List<Workout> =
+        dao.startingBetween(startTime - toleranceMs, startTime + toleranceMs).map { it.toModel() }
+
+    suspend fun allFinished(): List<Workout> = dao.allFinished().map { it.toModel() }
 
     suspend fun deleteAll() = dao.deleteAll()
 }
