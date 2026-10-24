@@ -109,7 +109,8 @@ fun StatsScreen(state: StatsState, onPeriod: (Period) -> Unit, onOpenSport: (Lon
         item {
             DCard(Modifier.fillMaxWidth()) {
                 SectionTitle(stringResource(R.string.stats_heatmap))
-                CalendarHeatmap(state.heatmap, state.today, 26, MaterialTheme.colorScheme.primary, { stringResource(R.string.fmt_month_short, it.monthValue) })
+                val monthFmt = stringResource(R.string.fmt_month_short)
+                CalendarHeatmap(state.heatmap, state.today, 26, MaterialTheme.colorScheme.primary, { monthFmt.format(it.monthValue) })
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.less), style = MaterialTheme.typography.labelSmall, color = extraColors.subtle)
                     listOf(0f, 0.3f, 0.5f, 0.75f, 1f).forEach { a ->
